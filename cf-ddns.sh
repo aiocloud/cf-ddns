@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+# China
 API="http://ipv4.icanhazip.com"
 DNS="119.29.29.29"
+# Global
+# API="https://api.myip.la"
+# DNS="1.1.1.1"
 CF_EMAIL=""
 CF_APIKEY=""
 CF_DOMAIN=""
@@ -33,20 +37,13 @@ CQUESTION="$CMAGENTA"
 CWARNING="$CYELLOW"
 CMSG="$CCYAN"
 
-echo -e "${CYELLOW}[信息] 正在读取当前 IP 地址中！${CEND}"
-DYNAMIC_IP=`curl -fsSL $API`
-if [[ "$DYNAMIC_IP" == `dig "@$DNS" +short "A" "$CF_DOMAIN" | grep -Ev '^;|\.$' | head -n1` ]]; then
-	echo -e "${CYELLOW}[信息] 当前 IP 地址无需更新！${CEND}"
-	exit 0
-fi
-
 List() {
 	echo -e "${CYELLOW}[信息] 正在读取所有 DNS 记录中！${CEND}"
 
 	curl -X GET "https://api.cloudflare.com/client/v4/zones/${CF_ZONEID}/dns_records" \
 		-H "X-Auth-Email: ${CF_EMAIL}" \
 		-H "X-Auth-Key: ${CF_APIKEY}" \
-		-H "Content-Type: application/json"
+		-H "Content-Type: application/json" | jq --tab
 }
 
 Update() {
@@ -56,7 +53,7 @@ Update() {
 		-H "X-Auth-Email: ${CF_EMAIL}" \
 		-H "X-Auth-Key: ${CF_APIKEY}" \
 		-H "Content-Type: application/json" \
-		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}'
+		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}' | jq --tab
 }
 
 Create() {
@@ -66,10 +63,18 @@ Create() {
 		-H "X-Auth-Email: ${CF_EMAIL}" \
 		-H "X-Auth-Key: ${CF_APIKEY}" \
 		-H "Content-Type: application/json" \
-		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}'
+		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}' | jq --tab
 }
 
+echo -e "${CYELLOW}[信息] 正在读取当前 IP 地址中！${CEND}"
+DYNAMIC_IP=`curl -fsSL $API`
+
 if [[ -z "$1" ]]; then
+	if [[ "$DYNAMIC_IP" == `dig "@$DNS" +short "A" "$CF_DOMAIN" | grep -Ev '^;|\.$' | head -n1` ]]; then
+		echo -e "${CYELLOW}[信息] 当前 IP 地址无需更新！${CEND}"
+		exit 0
+	fi
+
 	Update
 elif [[ "$1" == "--create" ]]; then
 	Create
