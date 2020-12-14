@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+API="http://ipv4.icanhazip.com"
+DNS="119.29.29.29"
 CF_EMAIL=""
 CF_APIKEY=""
 CF_DOMAIN=""
@@ -32,12 +34,10 @@ CWARNING="$CYELLOW"
 CMSG="$CCYAN"
 
 echo -e "${CYELLOW}[信息] 正在读取当前 IP 地址中！${CEND}"
-DYNAMIC_IP=`curl -fsSL http://ipv4.icanhazip.com`
-if [[ -f /tmp/cf-ddns.cache ]]; then
-	if [[ "$DYNAMIC_IP" == `dig "@119.29.29.29" +short "A" "$CF_DOMAIN" | grep -Ev '^;|\.$' | head -n1` ]]; then
-		echo -e "${CYELLOW}[信息] 当前 IP 地址无需更新！${CEND}"
-		exit 0
-	fi
+DYNAMIC_IP=`curl -fsSL $API`
+if [[ "$DYNAMIC_IP" == `dig "@$DNS" +short "A" "$CF_DOMAIN" | grep -Ev '^;|\.$' | head -n1` ]]; then
+	echo -e "${CYELLOW}[信息] 当前 IP 地址无需更新！${CEND}"
+	exit 0
 fi
 
 List() {
