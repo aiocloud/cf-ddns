@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
-# China
-API="http://ipv4.icanhazip.com"
 DNS="119.29.29.29"
-# Global
-# API="https://api.myip.la"
-# DNS="1.1.1.1"
-CF_EMAIL=""
-CF_APIKEY=""
-CF_DOMAIN=""
-CF_ZONEID=""
-CF_RECORDID=""
+CF_TOKEN="114514"
+CF_DOMAIN="example.com"
+CF_ZONEID="114514"
+CF_RECORDID="114514"
 CF_TTL="120"
 
 echo=echo
@@ -40,34 +34,31 @@ CMSG="$CCYAN"
 List() {
 	echo -e "${CYELLOW}[信息] 正在读取所有 DNS 记录中！${CEND}"
 
-	curl -X GET "https://api.cloudflare.com/client/v4/zones/${CF_ZONEID}/dns_records" \
-		-H "X-Auth-Email: ${CF_EMAIL}" \
-		-H "X-Auth-Key: ${CF_APIKEY}" \
-		-H "Content-Type: application/json" | jq --tab
+	curl -X GET "https://api.cloudflare.com/client/v4/zones/${CF_ZONEID}/dns_records?per_page=100" \
+		-H "Authorization: Bearer ${CF_TOKEN}" \
+		-H "Content-Type: application/json" | jq
 }
 
 Update() {
 	echo -e "${CYELLOW}[信息] 正在更新 DNS 记录中！${CEND}"
 
 	curl -X PUT "https://api.cloudflare.com/client/v4/zones/${CF_ZONEID}/dns_records/${CF_RECORDID}" \
-		-H "X-Auth-Email: ${CF_EMAIL}" \
-		-H "X-Auth-Key: ${CF_APIKEY}" \
+		-H "Authorization: Bearer ${CF_TOKEN}" \
 		-H "Content-Type: application/json" \
-		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}' | jq --tab
+		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}'
 }
 
 Create() {
 	echo -e "${CYELLOW}[信息] 正在创建 DNS 记录中！${CEND}"
 
 	curl -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONEID}/dns_records" \
-		-H "X-Auth-Email: ${CF_EMAIL}" \
-		-H "X-Auth-Key: ${CF_APIKEY}" \
+		-H "Authorization: Bearer ${CF_TOKEN}" \
 		-H "Content-Type: application/json" \
-		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}' | jq --tab
+		--data '{"type": "A", "name": "'${CF_DOMAIN}'", "content": "'${DYNAMIC_IP}'", "ttl": '${CF_TTL}', "proxied": false}'
 }
 
 echo -e "${CYELLOW}[信息] 正在读取当前 IP 地址中！${CEND}"
-DYNAMIC_IP=`curl -fsSL $API`
+DYNAMIC_IP=$(curl -fsSL -4 https://www.cloudflare.com/cdn-cgi/trace | grep ip | tr -d 'ip=')
 
 if [[ -z "$1" ]]; then
 	if [[ "$DYNAMIC_IP" == `dig "@$DNS" +short "A" "$CF_DOMAIN" | grep -Ev '^;|\.$' | head -n1` ]]; then
